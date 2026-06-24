@@ -51,6 +51,16 @@ class UserSummaryResponse(BaseModel):
     total_amount: float
 
 
+class RankingResponse(BaseModel):
+    """Schema for returning a user's ranking."""
+    
+    user_id: int
+    total_amount: float
+    transaction_count: int
+    score: float
+    rank: int
+
+
 class MessageResponse(BaseModel):
     """Generic message response."""
 

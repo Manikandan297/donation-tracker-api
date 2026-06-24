@@ -10,6 +10,7 @@ from schemas import (
     TransactionResponse,
     TransactionListResponse,
     UserSummaryResponse,
+    RankingResponse,
     MessageResponse,
 )
 
@@ -206,6 +207,59 @@ def get_summary(
         transaction_count=result.transaction_count,
         total_amount=result.total_amount,
     )
+
+
+@app.get(
+    "/ranking",
+    response_model=list[RankingResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get user ranking based on donations",
+    tags=["Summary"],
+)
+def get_ranking(
+    limit: int = Query(default=10, ge=1, le=100, description="Top N users to return"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get a ranking of users based on a multi-factor score.
+    
+    The score is calculated as:
+    `Score = (Total Amount * 0.8) + (Transaction Count * 20)`
+    
+    This ensures that both the total volume of money donated and the frequency
+    of donations contribute to the user's final rank.
+    """
+    results = (
+        db.query(
+            Transaction.user_id,
+            func.count(Transaction.id).label("transaction_count"),
+            func.coalesce(func.sum(Transaction.amount), 0.0).label("total_amount"),
+        )
+        .group_by(Transaction.user_id)
+        .all()
+    )
+
+    ranking_data = []
+    for row in results:
+        # Score calculation based on more than one factor
+        score = (row.total_amount * 0.8) + (row.transaction_count * 20.0)
+        ranking_data.append({
+            "user_id": row.user_id,
+            "total_amount": row.total_amount,
+            "transaction_count": row.transaction_count,
+            "score": score
+        })
+
+    # Sort descending by score
+    ranking_data.sort(key=lambda x: x["score"], reverse=True)
+
+    # Assign rank and limit
+    final_response = []
+    for idx, data in enumerate(ranking_data[:limit]):
+        data["rank"] = idx + 1
+        final_response.append(RankingResponse(**data))
+
+    return final_response
 
 
 @app.delete(

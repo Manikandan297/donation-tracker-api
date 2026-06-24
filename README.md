@@ -54,8 +54,20 @@ backend_assingment/
 | `GET` | `/transaction/{id}` | Get single transaction by ID |
 | `GET` | `/transactions/user/{user_id}` | Get user's transactions (paginated) |
 | `GET` | `/summary/{user_id}` | Get total amount & count for a user |
+| `GET` | `/ranking` | Get user rankings based on multi-factor score |
 | `DELETE` | `/transaction/{id}` | Delete a transaction |
 | `GET` | `/health` | Health check |
+
+---
+
+## 🏆 Ranking System
+
+The `GET /ranking` endpoint provides a fair leaderboard for top donors. It calculates a multi-factor score to prevent manipulation (e.g., someone spamming 1-rupee transactions to get to the top).
+
+**Formula used:**
+`Score = (Total Amount * 0.8) + (Transaction Count * 20)`
+
+This ensures that both the **total volume of money donated** and the **loyalty/frequency of donations** contribute to the user's final rank, making the system balanced.
 
 ---
 
