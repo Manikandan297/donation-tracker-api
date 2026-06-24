@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DonateFlow — Donation Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #111118;
+      --card: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.08);
+      --purple: #7c3aed;
+      --purple-light: #a78bfa;
+      --pink: #ec4899;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #f1f5f9;
+      --text-muted: #64748b;
+      --text-sub: #94a3b8;
+      --glow: 0 0 40px rgba(124,58,237,0.3);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 20% 20%, rgba(124,58,237,0.12) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 80%, rgba(6,182,212,0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 50%, rgba(236,72,153,0.05) 0%, transparent 60%);
+      animation: bgPulse 8s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes bgPulse {
+      0% { transform: scale(1) rotate(0deg); }
+      100% { transform: scale(1.1) rotate(3deg); }
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      width: 240px;
+      background: rgba(17,17,24,0.95);
+      border-right: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: var(--glow);
+    }
+
+    .logo-text { font-size: 18px; font-weight: 700; }
+    .logo-text span { color: var(--purple-light); }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      padding: 0 12px;
+      margin-bottom: 8px;
+      margin-top: 16px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text-sub);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      margin-bottom: 2px;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: var(--card);
+      color: var(--text);
+      border-color: var(--card-border);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(236,72,153,0.1));
+      color: var(--purple-light);
+      border-color: rgba(124,58,237,0.3);
+    }
+
+    .nav-item i { width: 18px; text-align: center; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+    }
+
+    .api-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.offline { background: var(--red); animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+    }
+
+    /* ── MAIN ── */
+    .main {
+      margin-left: 240px;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(10,10,15,0.8);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .page-title { font-size: 20px; font-weight: 700; }
+    .page-title span { color: var(--text-muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+
+    .header-actions { display: flex; gap: 10px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      color: white;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 25px rgba(124,58,237,0.5);
+    }
+
+    .btn-secondary {
+      background: var(--card);
+      color: var(--text-sub);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+
+    .btn-danger {
+      background: rgba(239,68,68,0.15);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ── CONTENT ── */
+    .content { padding: 32px; }
+
+    .page { display: none; }
+    .page.active { display: block; animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── STATS GRID ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gradient, linear-gradient(90deg, var(--purple), var(--pink)));
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.15);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+
+    .stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      margin-bottom: 14px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+
+    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+    /* ── GRID LAYOUT ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title i { color: var(--purple-light); }
+    .card-body { padding: 22px; }
+
+    /* ── FORM ── */
+    .form-group { margin-bottom: 18px; }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--purple);
+      background: rgba(124,58,237,0.05);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+    }
+
+    .form-control::placeholder { color: var(--text-muted); }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    tbody tr:last-child { border-bottom: none; }
+
+    td { padding: 13px 16px; color: var(--text-sub); vertical-align: middle; }
+    td:first-child { color: var(--text); font-weight: 600; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-green { background: rgba(16,185,129,0.15); color: var(--green); }
+    .badge-purple { background: rgba(124,58,237,0.15); color: var(--purple-light); }
+    .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+    .badge-cyan { background: rgba(6,182,212,0.15); color: var(--cyan); }
+
+    /* ── ALERT / TOAST ── */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 280px;
+      animation: slideIn 0.3s ease;
+      backdrop-filter: blur(20px);
+      border: 1px solid;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(40px); }
+    }
+
+    .toast-success { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: #34d399; }
+    .toast-error { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
+    .toast-info { background: rgba(124,58,237,0.15); border-color: rgba(124,58,237,0.3); color: var(--purple-light); }
+    .toast-warning { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: var(--yellow); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: #13131a;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 460px;
+      padding: 28px;
+      transform: scale(0.95);
+      transition: transform 0.25s;
+    }
+
+    .modal-overlay.open .modal { transform: scale(1); }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .modal-title { font-size: 18px; font-weight: 700; }
+
+    .modal-close {
+      width: 32px; height: 32px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+
+    /* ── SUMMARY CARD ── */
+    .summary-box {
+      background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(236,72,153,0.1));
+      border: 1px solid rgba(124,58,237,0.25);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .summary-amount {
+      font-size: 40px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--purple-light), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -2px;
+    }
+
+    .summary-meta {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 16px;
+    }
+
+    .summary-meta-item { text-align: center; }
+    .summary-meta-item .val { font-size: 20px; font-weight: 700; }
+    .summary-meta-item .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state i {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+      display: block;
+    }
+
+    .empty-state p { font-size: 14px; }
+
+    /* ── LOADING ── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SEARCH ── */
+    .search-box {
+      position: relative;
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .search-box input { padding-left: 36px; }
+
+    /* ── PAGINATION ── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 14px 22px;
+      border-top: 1px solid var(--card-border);
+    }
+
+    .page-info { font-size: 12px; color: var(--text-muted); margin-right: 8px; }
+
+    .page-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      color: var(--text-sub);
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover, .page-btn.active {
+      background: var(--purple);
+      border-color: var(--purple);
+      color: white;
+    }
+
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── AMOUNT ── */
+    .amount-positive {
+      color: var(--green);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .sidebar { width: 60px; padding: 16px 8px; }
+      .logo-text, .nav-label, .nav-item span, .sidebar-footer .api-status span { display: none; }
+      .main { margin-left: 60px; }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .request-id-cell {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--cyan);
+      background: rgba(6,182,212,0.08);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--purple-light), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Modal: New Transaction -->
+<div class="modal-overlay" id="txnModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💸 New Donation</div>
+      <div class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">User ID</label>
+      <input class="form-control" type="number" id="txnUserId" placeholder="e.g. 1" min="1"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Amount (₹)</label>
+      <input class="form-control" type="number" id="txnAmount" placeholder="e.g. 500.00" min="0.01" step="0.01"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Request ID <span style="color:var(--text-muted);font-size:10px;">(Unique idempotency key)</span></label>
+      <div style="display:flex;gap:8px;">
+        <input class="form-control" type="text" id="txnRequestId" placeholder="e.g. TXN-2024-001"/>
+        <button class="btn btn-secondary" onclick="genRequestId()" title="Auto-generate"><i class="fas fa-magic"></i></button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" id="submitTxnBtn" onclick="submitTransaction()">
+        <i class="fas fa-paper-plane"></i> Submit Donation
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">💜</div>
+    <div class="logo-text">Donate<span>Flow</span></div>
+  </div>
+
+  <div class="nav-label">Menu</div>
+  <div class="nav-item active" onclick="switchPage('dashboard', this)">
+    <i class="fas fa-chart-pie"></i> <span>Dashboard</span>
+  </div>
+  <div class="nav-item" onclick="switchPage('transactions', this)">
+    <i class="fas fa-list-ul"></i> <span>Transactions</span>
+  </div>
+  <div class="nav-item" onclick="switchPage('new', this)">
+    <i class="fas fa-plus-circle"></i> <span>New Donation</span>
+  </div>
+  <div class="nav-label">Tools</div>
+  <div class="nav-item" onclick="switchPage('summary', this)">
+    <i class="fas fa-user-circle"></i> <span>User Summary</span>
+  </div>
+  <div class="nav-item" onclick="switchPage('lookup', this)">
+    <i class="fas fa-search"></i> <span>Lookup</span>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="api-status">
+      <div class="status-dot offline" id="statusDot"></div>
+      <span id="statusText">Checking...</span>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="header">
+    <div class="page-title" id="pageTitle">
+      Dashboard <span>Overview</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="refreshAll()"><i class="fas fa-sync-alt"></i> Refresh</button>
+      <button class="btn btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> New Donation</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card" style="--gradient: linear-gradient(90deg,#7c3aed,#ec4899)">
+          <div class="stat-icon" style="background:rgba(124,58,237,0.2);color:var(--purple-light)"><i class="fas fa-coins"></i></div>
+          <div class="stat-value gradient-text" id="statTotal">₹0</div>
+          <div class="stat-label">Total Donations</div>
+        </div>
+        <div class="stat-card" style="--gradient: linear-gradient(90deg,#06b6d4,#3b82f6)">
+          <div class="stat-icon" style="background:rgba(6,182,212,0.2);color:var(--cyan)"><i class="fas fa-receipt"></i></div>
+          <div class="stat-value" id="statCount" style="color:var(--cyan)">0</div>
+          <div class="stat-label">Total Transactions</div>
+        </div>
+        <div class="stat-card" style="--gradient: linear-gradient(90deg,#10b981,#84cc16)">
+          <div class="stat-icon" style="background:rgba(16,185,129,0.2);color:var(--green)"><i class="fas fa-users"></i></div>
+          <div class="stat-value" id="statUsers" style="color:var(--green)">0</div>
+          <div class="stat-label">Unique Donors</div>
+        </div>
+        <div class="stat-card" style="--gradient: linear-gradient(90deg,#f59e0b,#ef4444)">
+          <div class="stat-icon" style="background:rgba(245,158,11,0.2);color:var(--yellow)"><i class="fas fa-chart-line"></i></div>
+          <div class="stat-value" id="statAvg" style="color:var(--yellow)">₹0</div>
+          <div class="stat-label">Avg. Donation</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-clock"></i> Recent Transactions</div>
+            <button class="btn btn-secondary btn-sm" onclick="switchPage('transactions', document.querySelector('[onclick*=transactions]'))">View All</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#ID</th>
+                  <th>User</th>
+                  <th>Amount</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="recentTxnBody">
+                <tr><td colspan="4"><div class="empty-state"><i class="fas fa-inbox"></i><p>No transactions yet</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-fire"></i> Top Donors</div>
+          </div>
+          <div class="card-body" id="topDonorsList">
+            <div class="empty-state"><i class="fas fa-trophy"></i><p>No data yet</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TRANSACTIONS ── -->
+    <div class="page" id="page-transactions">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-list"></i> All Transactions</div>
+          <div class="search-box" style="width:220px;">
+            <i class="fas fa-search"></i>
+            <input class="form-control" type="text" id="txnSearch" placeholder="Search..." oninput="filterTransactions()"/>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#ID</th>
+                <th>User ID</th>
+                <th>Amount</th>
+                <th>Request ID</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="allTxnBody">
+              <tr><td colspan="6"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="txnPagination"></div>
+      </div>
+    </div>
+
+    <!-- ── NEW DONATION ── -->
+    <div class="page" id="page-new">
+      <div class="grid-2" style="max-width:800px;margin:0 auto;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-hand-holding-heart"></i> Make a Donation</div>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">User ID</label>
+              <input class="form-control" type="number" id="newUserId" placeholder="Enter user ID" min="1"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Amount (₹)</label>
+              <input class="form-control" type="number" id="newAmount" placeholder="0.00" min="0.01" step="0.01"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Request ID</label>
+              <div style="display:flex;gap:8px;">
+                <input class="form-control" type="text" id="newRequestId" placeholder="Unique transaction key"/>
+                <button class="btn btn-secondary" onclick="genRequestId2()" title="Auto-generate"><i class="fas fa-magic"></i></button>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%" id="newTxnBtn" onclick="submitNewTransaction()">
+              <i class="fas fa-paper-plane"></i> Submit Donation
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-info-circle"></i> Guide</div>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="width:32px;height:32px;background:rgba(124,58,237,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--purple-light);flex-shrink:0;">1</div>
+              <div><div style="font-size:13px;font-weight:600;">User ID</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Enter the donor's unique user ID (must be > 0)</div></div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="width:32px;height:32px;background:rgba(6,182,212,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--cyan);flex-shrink:0;">2</div>
+              <div><div style="font-size:13px;font-weight:600;">Amount</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Donation amount in ₹ — must be greater than 0</div></div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="width:32px;height:32px;background:rgba(16,185,129,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--green);flex-shrink:0;">3</div>
+              <div><div style="font-size:13px;font-weight:600;">Request ID</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Unique key to prevent duplicate donations — click ✨ to auto-generate</div></div>
+            </div>
+            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px;font-size:12px;color:var(--yellow);">
+              <i class="fas fa-shield-alt"></i> &nbsp;Same Request ID submitted twice → <strong>409 Conflict</strong> (Safe retry!)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── USER SUMMARY ── -->
+    <div class="page" id="page-summary">
+      <div style="max-width:540px;margin:0 auto;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-user-circle"></i> User Donation Summary</div>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Enter User ID</label>
+              <div style="display:flex;gap:10px;">
+                <input class="form-control" type="number" id="summaryUserId" placeholder="e.g. 1" min="1"/>
+                <button class="btn btn-primary" onclick="fetchSummary()"><i class="fas fa-search"></i> Search</button>
+              </div>
+            </div>
+            <div id="summaryResult">
+              <div class="empty-state"><i class="fas fa-user-circle"></i><p>Enter a User ID to view their donation summary</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LOOKUP ── -->
+    <div class="page" id="page-lookup">
+      <div style="max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:20px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-search"></i> Lookup by Transaction ID</div>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;gap:10px;">
+              <input class="form-control" type="number" id="lookupId" placeholder="Enter Transaction ID" min="1"/>
+              <button class="btn btn-primary" onclick="lookupTransaction()"><i class="fas fa-bolt"></i> Fetch</button>
+            </div>
+            <div id="lookupResult" style="margin-top:16px;"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-users"></i> User's Transactions</div>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;gap:10px;">
+              <input class="form-control" type="number" id="userTxnId" placeholder="Enter User ID" min="1"/>
+              <button class="btn btn-primary" onclick="fetchUserTransactions()"><i class="fas fa-list"></i> Fetch</button>
+            </div>
+            <div id="userTxnResult" style="margin-top:16px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const API = 'http://127.0.0.1:8000';
+  let allTransactions = [];
+  let currentPage = 1;
+  const PAGE_SIZE = 10;
+
+  /* ── UTILS ── */
+  function fmt(amount) { return '₹' + Number(amount).toLocaleString('en-IN', {minimumFractionDigits: 2}); }
+  function fmtDate(dt) {
+    if (!dt) return '—';
+    return new Date(dt).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+  function genId() { return 'TXN-' + Date.now() + '-' + Math.floor(Math.random()*1000); }
+  function genRequestId() { document.getElementById('txnRequestId').value = genId(); }
+  function genRequestId2() { document.getElementById('newRequestId').value = genId(); }
+
+  /* ── TOAST ── */
+  function toast(msg, type='info') {
+    const icons = { success:'fa-check-circle', error:'fa-times-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<i class="fas ${icons[type]}"></i> ${msg}`;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(() => {
+      el.style.animation = 'slideOut 0.3s ease forwards';
+      setTimeout(() => el.remove(), 300);
+    }, 3000);
+  }
+
+  /* ── NAV ── */
+  const pageTitles = {
+    dashboard: ['Dashboard', 'Overview'],
+    transactions: ['All Transactions', 'Manage & view'],
+    new: ['New Donation', 'Submit a donation'],
+    summary: ['User Summary', 'Donation stats per user'],
+    lookup: ['Lookup', 'Find by ID'],
+  };
+
+  function switchPage(name, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    if (el) el.classList.add('active');
+    const [title, sub] = pageTitles[name] || [name, ''];
+    document.getElementById('pageTitle').innerHTML = `${title} <span>${sub}</span>`;
+    if (name === 'transactions') loadAllTransactions();
+    if (name === 'dashboard') loadDashboard();
+  }
+
+  /* ── API CHECK ── */
+  async function checkApi() {
+    try {
+      const r = await fetch(API + '/health');
+      if (r.ok) {
+        document.getElementById('statusDot').className = 'status-dot';
+        document.getElementById('statusText').textContent = 'API Online';
+      } else throw new Error();
+    } catch {
+      document.getElementById('statusDot').className = 'status-dot offline';
+      document.getElementById('statusText').textContent = 'API Offline';
+    }
+  }
+
+  /* ── DASHBOARD ── */
+  async function loadDashboard() {
+    try {
+      const r = await fetch(`${API}/transactions?page=1&page_size=100`);
+      const data = await r.json();
+      const txns = data.transactions || [];
+
+      const total = txns.reduce((s, t) => s + t.amount, 0);
+      const users = new Set(txns.map(t => t.user_id));
+      const avg = txns.length ? total / txns.length : 0;
+
+      document.getElementById('statTotal').textContent = fmt(total);
+      document.getElementById('statCount').textContent = txns.length;
+      document.getElementById('statUsers').textContent = users.size;
+      document.getElementById('statAvg').textContent = fmt(avg);
+
+      // Recent 5
+      const recent = txns.slice(0, 5);
+      document.getElementById('recentTxnBody').innerHTML = recent.length
+        ? recent.map(t => `
+            <tr>
+              <td>#${t.id}</td>
+              <td><span class="badge badge-purple">U${t.user_id}</span></td>
+              <td class="amount-positive">${fmt(t.amount)}</td>
+              <td style="font-size:11px;color:var(--text-muted)">${fmtDate(t.created_at)}</td>
+            </tr>`).join('')
+        : '<tr><td colspan="4"><div class="empty-state"><i class="fas fa-inbox"></i><p>No transactions yet</p></div></td></tr>';
+
+      // Top donors
+      const userMap = {};
+      txns.forEach(t => {
+        if (!userMap[t.user_id]) userMap[t.user_id] = { total: 0, count: 0 };
+        userMap[t.user_id].total += t.amount;
+        userMap[t.user_id].count++;
+      });
+
+      const sorted = Object.entries(userMap).sort((a,b) => b[1].total - a[1].total).slice(0, 5);
+      const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+
+      document.getElementById('topDonorsList').innerHTML = sorted.length
+        ? sorted.map(([uid, d], i) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--card-border);">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:20px">${medals[i]}</span>
+                <div>
+                  <div style="font-size:13px;font-weight:600;">User #${uid}</div>
+                  <div style="font-size:11px;color:var(--text-muted)">${d.count} donation${d.count>1?'s':''}</div>
+                </div>
+              </div>
+              <div class="amount-positive">${fmt(d.total)}</div>
+            </div>`).join('')
+        : '<div class="empty-state"><i class="fas fa-trophy"></i><p>No data yet</p></div>';
+    } catch (e) {
+      toast('Failed to load dashboard', 'error');
+    }
+  }
+
+  /* ── LOAD ALL TRANSACTIONS ── */
+  async function loadAllTransactions() {
+    try {
+      const r = await fetch(`${API}/transactions?page=1&page_size=200`);
+      const data = await r.json();
+      allTransactions = data.transactions || [];
+      renderTransactions(allTransactions);
+    } catch {
+      toast('Failed to load transactions', 'error');
+    }
+  }
+
+  function renderTransactions(txns) {
+    const total = txns.length;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const paginated = txns.slice(start, start + PAGE_SIZE);
+
+    document.getElementById('allTxnBody').innerHTML = paginated.length
+      ? paginated.map(t => `
+          <tr>
+            <td>#${t.id}</td>
+            <td><span class="badge badge-cyan">User ${t.user_id}</span></td>
+            <td class="amount-positive">${fmt(t.amount)}</td>
+            <td><span class="request-id-cell">${t.request_id}</span></td>
+            <td style="font-size:11px;color:var(--text-muted)">${fmtDate(t.created_at)}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${t.id})">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>`).join('')
+      : '<tr><td colspan="6"><div class="empty-state"><i class="fas fa-inbox"></i><p>No transactions found</p></div></td></tr>';
+
+    // Pagination
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    let pag = `<span class="page-info">Showing ${start+1}–${Math.min(start+PAGE_SIZE,total)} of ${total}</span>`;
+    pag += `<button class="page-btn" onclick="changePage(${currentPage-1})" ${currentPage<=1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (totalPages <= 7 || Math.abs(p - currentPage) <= 1 || p === 1 || p === totalPages) {
+        pag += `<button class="page-btn ${p===currentPage?'active':''}" onclick="changePage(${p})">${p}</button>`;
+      } else if (Math.abs(p - currentPage) === 2) {
+        pag += `<span style="color:var(--text-muted);padding:0 4px;">…</span>`;
+      }
+    }
+    pag += `<button class="page-btn" onclick="changePage(${currentPage+1})" ${currentPage>=totalPages?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
+    document.getElementById('txnPagination').innerHTML = pag;
+  }
+
+  function changePage(p) {
+    const filtered = getFiltered();
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    if (p < 1 || p > totalPages) return;
+    currentPage = p;
+    renderTransactions(filtered);
+  }
+
+  function getFiltered() {
+    const q = (document.getElementById('txnSearch')?.value || '').toLowerCase();
+    return allTransactions.filter(t =>
+      !q ||
+      String(t.id).includes(q) ||
+      String(t.user_id).includes(q) ||
+      t.request_id.toLowerCase().includes(q) ||
+      String(t.amount).includes(q)
+    );
+  }
+
+  function filterTransactions() {
+    currentPage = 1;
+    renderTransactions(getFiltered());
+  }
+
+  /* ── DELETE ── */
+  async function deleteTransaction(id) {
+    if (!confirm(`Delete Transaction #${id}? This cannot be undone.`)) return;
+    try {
+      const r = await fetch(`${API}/transaction/${id}`, { method: 'DELETE' });
+      if (r.ok) {
+        toast(`Transaction #${id} deleted successfully`, 'success');
+        loadAllTransactions();
+        loadDashboard();
+      } else {
+        const e = await r.json();
+        toast(e.detail || 'Delete failed', 'error');
+      }
+    } catch { toast('Network error', 'error'); }
+  }
+
+  /* ── MODAL ── */
+  function openModal() { document.getElementById('txnModal').classList.add('open'); }
+  function closeModal() { document.getElementById('txnModal').classList.remove('open'); }
+
+  /* ── SUBMIT (modal) ── */
+  async function submitTransaction() {
+    const uid = parseInt(document.getElementById('txnUserId').value);
+    const amt = parseFloat(document.getElementById('txnAmount').value);
+    const rid = document.getElementById('txnRequestId').value.trim();
+
+    if (!uid || uid < 1) { toast('Enter a valid User ID (> 0)', 'warning'); return; }
+    if (!amt || amt <= 0) { toast('Amount must be greater than 0', 'warning'); return; }
+    if (!rid) { toast('Request ID is required', 'warning'); return; }
+
+    const btn = document.getElementById('submitTxnBtn');
+    btn.innerHTML = '<span class="spinner"></span> Submitting...';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch(`${API}/transaction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: uid, amount: amt, request_id: rid })
+      });
+      const data = await r.json();
+      if (r.status === 201) {
+        toast('Donation submitted successfully! 🎉', 'success');
+        closeModal();
+        document.getElementById('txnUserId').value = '';
+        document.getElementById('txnAmount').value = '';
+        document.getElementById('txnRequestId').value = '';
+        loadDashboard();
+      } else if (r.status === 409) {
+        toast('Duplicate: Request ID already exists (409)', 'warning');
+      } else {
+        toast(data.detail || 'Submission failed', 'error');
+      }
+    } catch { toast('Network error — Is the server running?', 'error'); }
+    finally {
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Donation';
+      btn.disabled = false;
+    }
+  }
+
+  /* ── SUBMIT (new page) ── */
+  async function submitNewTransaction() {
+    const uid = parseInt(document.getElementById('newUserId').value);
+    const amt = parseFloat(document.getElementById('newAmount').value);
+    const rid = document.getElementById('newRequestId').value.trim();
+
+    if (!uid || uid < 1) { toast('Enter a valid User ID (> 0)', 'warning'); return; }
+    if (!amt || amt <= 0) { toast('Amount must be greater than 0', 'warning'); return; }
+    if (!rid) { toast('Request ID is required', 'warning'); return; }
+
+    const btn = document.getElementById('newTxnBtn');
+    btn.innerHTML = '<span class="spinner"></span> Submitting...';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch(`${API}/transaction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: uid, amount: amt, request_id: rid })
+      });
+      const data = await r.json();
+      if (r.status === 201) {
+        toast('Donation submitted successfully! 🎉', 'success');
+        document.getElementById('newUserId').value = '';
+        document.getElementById('newAmount').value = '';
+        document.getElementById('newRequestId').value = '';
+        loadDashboard();
+      } else if (r.status === 409) {
+        toast('Duplicate: Request ID already exists (409 Conflict)', 'warning');
+      } else {
+        toast(data.detail || 'Submission failed', 'error');
+      }
+    } catch { toast('Network error — Is the server running?', 'error'); }
+    finally {
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Donation';
+      btn.disabled = false;
+    }
+  }
+
+  /* ── SUMMARY ── */
+  async function fetchSummary() {
+    const uid = parseInt(document.getElementById('summaryUserId').value);
+    if (!uid || uid < 1) { toast('Enter a valid User ID', 'warning'); return; }
+
+    document.getElementById('summaryResult').innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+
+    try {
+      const r = await fetch(`${API}/summary/${uid}`);
+      const data = await r.json();
+      if (r.ok) {
+        document.getElementById('summaryResult').innerHTML = `
+          <div class="summary-box">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">User #${uid} — Total Donated</div>
+            <div class="summary-amount">${fmt(data.total_amount)}</div>
+            <div class="summary-meta">
+              <div class="summary-meta-item">
+                <div class="val" style="color:var(--cyan)">${data.transaction_count}</div>
+                <div class="lbl">Transactions</div>
+              </div>
+              <div class="summary-meta-item">
+                <div class="val" style="color:var(--green)">${data.transaction_count > 0 ? fmt(data.total_amount / data.transaction_count) : '₹0'}</div>
+                <div class="lbl">Average</div>
+              </div>
+            </div>
+          </div>`;
+      } else {
+        toast(data.detail || 'User not found', 'error');
+        document.getElementById('summaryResult').innerHTML = '<div class="empty-state"><i class="fas fa-user-slash"></i><p>No data found for this user</p></div>';
+      }
+    } catch { toast('Network error', 'error'); }
+  }
+
+  /* ── LOOKUP ── */
+  async function lookupTransaction() {
+    const id = parseInt(document.getElementById('lookupId').value);
+    if (!id || id < 1) { toast('Enter a valid Transaction ID', 'warning'); return; }
+
+    document.getElementById('lookupResult').innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+
+    try {
+      const r = await fetch(`${API}/transaction/${id}`);
+      const data = await r.json();
+      if (r.ok) {
+        document.getElementById('lookupResult').innerHTML = `
+          <div style="background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+            ${row('Transaction ID', `#${data.id}`)}
+            ${row('User ID', `<span class="badge badge-purple">User ${data.user_id}</span>`)}
+            ${row('Amount', `<span class="amount-positive">${fmt(data.amount)}</span>`)}
+            ${row('Request ID', `<span class="request-id-cell">${data.request_id}</span>`)}
+            ${row('Created At', fmtDate(data.created_at))}
+          </div>`;
+      } else {
+        document.getElementById('lookupResult').innerHTML = `<div class="empty-state"><i class="fas fa-search"></i><p>${data.detail || 'Not found'}</p></div>`;
+      }
+    } catch { toast('Network error', 'error'); }
+  }
+
+  async function fetchUserTransactions() {
+    const uid = parseInt(document.getElementById('userTxnId').value);
+    if (!uid || uid < 1) { toast('Enter a valid User ID', 'warning'); return; }
+
+    document.getElementById('userTxnResult').innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+
+    try {
+      const r = await fetch(`${API}/transactions/user/${uid}?page=1&page_size=50`);
+      const data = await r.json();
+      if (r.ok) {
+        const txns = data.transactions || [];
+        document.getElementById('userTxnResult').innerHTML = txns.length
+          ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${data.total} transaction(s) found for User #${uid}</div>
+             <div style="display:flex;flex-direction:column;gap:8px;">
+               ${txns.map(t => `
+                 <div style="background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+                   <div>
+                     <div style="font-size:13px;font-weight:600;">#${t.id} <span class="request-id-cell" style="font-size:11px;">${t.request_id}</span></div>
+                     <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${fmtDate(t.created_at)}</div>
+                   </div>
+                   <div class="amount-positive">${fmt(t.amount)}</div>
+                 </div>`).join('')}
+             </div>`
+          : '<div class="empty-state"><i class="fas fa-inbox"></i><p>No transactions for this user</p></div>';
+      } else {
+        document.getElementById('userTxnResult').innerHTML = `<div class="empty-state"><p>${data.detail || 'Error'}</p></div>`;
+      }
+    } catch { toast('Network error', 'error'); }
+  }
+
+  function row(label, value) {
+    return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+      <span style="color:var(--text-muted)">${label}</span>
+      <span>${value}</span>
+    </div>`;
+  }
+
+  /* ── REFRESH ── */
+  function refreshAll() {
+    checkApi();
+    loadDashboard();
+    if (document.getElementById('page-transactions').classList.contains('active')) loadAllTransactions();
+    toast('Refreshed!', 'info');
+  }
+
+  /* ── KEYBOARD ── */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && document.getElementById('txnModal').classList.contains('open')) submitTransaction();
+  });
+
+  /* ── INIT ── */
+  checkApi();
+  loadDashboard();
+  setInterval(checkApi, 15000);
+</script>
+</body>
+</html>
